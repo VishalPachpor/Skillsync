@@ -26,6 +26,16 @@ app.use(
   })
 );
 
+// Development middleware for testing - automatically set userId
+if (process.env.NODE_ENV !== "production") {
+  app.use((req, _res, next) => {
+    if (!req.session.userId) {
+      req.session.userId = 1; // Use a dummy user ID for development
+    }
+    next();
+  });
+}
+
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Error:', err);
