@@ -4,10 +4,13 @@ export default async function handler(req, res) {
   // Enable CORS
   res.setHeader("Access-Control-Allow-Credentials", true);
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+  );
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
   );
 
   // Handle OPTIONS method (preflight requests)
@@ -16,18 +19,27 @@ export default async function handler(req, res) {
     return;
   }
 
+  // For debugging
+  console.log(`API route called: ${req.method} ${req.url}`);
+  console.log("Headers:", req.headers);
+
   try {
     if (req.method === "GET") {
       // Return mock tasks or connect to your database here
-      res.status(200).json([
-        {
-          id: "1",
-          title: "Sample Task",
-          description: "This is a sample task",
-          completed: false,
-        },
-      ]);
+      console.log("GET request to /api/tasks");
+      res
+        .status(200)
+        .json([
+          {
+            id: "1",
+            title: "Sample Task",
+            description: "This is a sample task",
+            completed: false,
+          },
+        ]);
     } else if (req.method === "POST") {
+      console.log("POST request to /api/tasks");
+
       // Parse the request body
       let taskData;
       try {
@@ -48,10 +60,9 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Invalid request body" });
       }
 
-      console.log("Creating task:", taskData);
+      console.log("Creating task with data:", taskData);
 
-      // Here you would normally save to database
-      // For now, mock a successful response
+      // Always return a success response for now
       res.status(201).json({
         id: Date.now().toString(),
         ...taskData,
@@ -59,7 +70,7 @@ export default async function handler(req, res) {
       });
     } else {
       // Method not allowed
-      res.status(405).json({ error: "Method not allowed" });
+      res.status(405).json({ error: `Method ${req.method} not allowed` });
     }
   } catch (error) {
     console.error("API error:", error);
