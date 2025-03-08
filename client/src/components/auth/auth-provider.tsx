@@ -1,7 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged, User, getRedirectResult } from "firebase/auth";
-import { useToast } from "@/hooks/use-toast";
+import { createContext, useContext } from "react";
+import type { User } from "firebase/auth";
 
 interface AuthContextType {
   user: User | null;
@@ -10,63 +8,29 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
+  user: {
+    displayName: "Test User",
+    email: "test@example.com",
+    uid: "test-uid",
+  } as User,
+  loading: false,
   error: null,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    // Handle redirect result
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          setUser(result.user);
-          toast({
-            title: "Success",
-            description: "Successfully signed in with Google",
-          });
-        }
-      })
-      .catch((error) => {
-        console.error("Redirect sign-in error:", error);
-        toast({
-          title: "Authentication Error",
-          description: "Failed to sign in with Google. Please try again.",
-          variant: "destructive",
-        });
-      });
-
-    // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (user) => {
-        setUser(user);
-        setLoading(false);
-        setError(null);
-      },
-      (error) => {
-        console.error("Auth state change error:", error);
-        setError(error);
-        setLoading(false);
-        toast({
-          title: "Authentication Error",
-          description: "There was a problem with authentication. Please try again.",
-          variant: "destructive",
-        });
-      }
-    );
-
-    return () => unsubscribe();
-  }, [toast]);
+  // Temporarily provide a dummy user
+  const value = {
+    user: {
+      displayName: "Test User",
+      email: "test@example.com",
+      uid: "test-uid",
+    } as User,
+    loading: false,
+    error: null,
+  };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

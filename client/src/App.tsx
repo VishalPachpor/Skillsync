@@ -21,16 +21,7 @@ function Navigate({ to }: { to: string }) {
 }
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
-
+  // Temporarily removed auth check
   return (
     <MainLayout>
       <Component />
