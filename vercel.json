@@ -15,7 +15,7 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
         }
       ]
     },
@@ -49,9 +49,28 @@
       ]
     }
   ],
-  "rewrites": [
-    { "source": "/api/tasks", "destination": "/api/tasks" },
-    { "source": "/api/milestones", "destination": "/api/milestones" },
-    { "source": "/(.*)", "destination": "/index.html" }
+  "routes": [
+    {
+      "src": "/api/tasks",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "dest": "/api/tasks"
+    },
+    {
+      "src": "/api/tasks/(.*)",
+      "methods": ["GET", "PUT", "DELETE", "OPTIONS"],
+      "dest": "/api/tasks/$1"
+    },
+    {
+      "src": "/api/milestones",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "dest": "/api/milestones"
+    },
+    {
+      "src": "/api/milestones/(.*)",
+      "methods": ["GET", "PUT", "DELETE", "OPTIONS"],
+      "dest": "/api/milestones/$1"
+    },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
