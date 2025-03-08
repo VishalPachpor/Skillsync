@@ -14,19 +14,19 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Task operations
   getTasks(userId: number): Promise<Task[]>;
   getTask(id: number): Promise<Task | undefined>;
   createTask(userId: number, task: InsertTask): Promise<Task>;
   updateTask(id: number, task: Partial<InsertTask>): Promise<Task>;
   deleteTask(id: number): Promise<void>;
-  
+
   // Time entry operations
   getTimeEntries(userId: number): Promise<TimeEntry[]>;
   createTimeEntry(userId: number, entry: InsertTimeEntry): Promise<TimeEntry>;
   updateTimeEntry(id: number, entry: Partial<InsertTimeEntry>): Promise<TimeEntry>;
-  
+
   // Milestone operations
   getMilestones(userId: number): Promise<Milestone[]>;
   createMilestone(userId: number, milestone: InsertMilestone): Promise<Milestone>;
@@ -65,7 +65,12 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId.users++;
-    const user: User = { ...insertUser, id };
+    const user: User = {
+      id,
+      email: insertUser.email,
+      name: insertUser.name,
+      photoUrl: insertUser.photoUrl ?? null,
+    };
     this.users.set(id, user);
     return user;
   }
@@ -83,7 +88,15 @@ export class MemStorage implements IStorage {
 
   async createTask(userId: number, insertTask: InsertTask): Promise<Task> {
     const id = this.currentId.tasks++;
-    const task: Task = { ...insertTask, id, userId };
+    const task: Task = {
+      id,
+      userId,
+      title: insertTask.title,
+      description: insertTask.description ?? null,
+      category: insertTask.category,
+      dueDate: insertTask.dueDate ?? null,
+      completed: insertTask.completed ?? false,
+    };
     this.tasks.set(id, task);
     return task;
   }
@@ -91,7 +104,12 @@ export class MemStorage implements IStorage {
   async updateTask(id: number, updateTask: Partial<InsertTask>): Promise<Task> {
     const task = this.tasks.get(id);
     if (!task) throw new Error("Task not found");
-    const updatedTask = { ...task, ...updateTask };
+    const updatedTask = { ...task };
+    if (updateTask.title !== undefined) updatedTask.title = updateTask.title;
+    if (updateTask.description !== undefined) updatedTask.description = updateTask.description ?? null;
+    if (updateTask.category !== undefined) updatedTask.category = updateTask.category;
+    if (updateTask.dueDate !== undefined) updatedTask.dueDate = updateTask.dueDate ?? null;
+    if (updateTask.completed !== undefined) updatedTask.completed = updateTask.completed ?? false;
     this.tasks.set(id, updatedTask);
     return updatedTask;
   }
@@ -112,7 +130,14 @@ export class MemStorage implements IStorage {
     insertEntry: InsertTimeEntry
   ): Promise<TimeEntry> {
     const id = this.currentId.timeEntries++;
-    const entry: TimeEntry = { ...insertEntry, id, userId };
+    const entry: TimeEntry = {
+      id,
+      userId,
+      taskId: insertEntry.taskId,
+      startTime: insertEntry.startTime,
+      endTime: insertEntry.endTime ?? null,
+      duration: insertEntry.duration ?? null,
+    };
     this.timeEntries.set(id, entry);
     return entry;
   }
@@ -123,7 +148,11 @@ export class MemStorage implements IStorage {
   ): Promise<TimeEntry> {
     const entry = this.timeEntries.get(id);
     if (!entry) throw new Error("Time entry not found");
-    const updatedEntry = { ...entry, ...updateEntry };
+    const updatedEntry = { ...entry };
+    if (updateEntry.taskId !== undefined) updatedEntry.taskId = updateEntry.taskId;
+    if (updateEntry.startTime !== undefined) updatedEntry.startTime = updateEntry.startTime;
+    if (updateEntry.endTime !== undefined) updatedEntry.endTime = updateEntry.endTime ?? null;
+    if (updateEntry.duration !== undefined) updatedEntry.duration = updateEntry.duration ?? null;
     this.timeEntries.set(id, updatedEntry);
     return updatedEntry;
   }
@@ -140,7 +169,14 @@ export class MemStorage implements IStorage {
     insertMilestone: InsertMilestone
   ): Promise<Milestone> {
     const id = this.currentId.milestones++;
-    const milestone: Milestone = { ...insertMilestone, id, userId };
+    const milestone: Milestone = {
+      id,
+      userId,
+      title: insertMilestone.title,
+      description: insertMilestone.description ?? null,
+      targetDate: insertMilestone.targetDate,
+      completed: insertMilestone.completed ?? false,
+    };
     this.milestones.set(id, milestone);
     return milestone;
   }
@@ -151,7 +187,11 @@ export class MemStorage implements IStorage {
   ): Promise<Milestone> {
     const milestone = this.milestones.get(id);
     if (!milestone) throw new Error("Milestone not found");
-    const updatedMilestone = { ...milestone, ...updateMilestone };
+    const updatedMilestone = { ...milestone };
+    if (updateMilestone.title !== undefined) updatedMilestone.title = updateMilestone.title;
+    if (updateMilestone.description !== undefined) updatedMilestone.description = updateMilestone.description ?? null;
+    if (updateMilestone.targetDate !== undefined) updatedMilestone.targetDate = updateMilestone.targetDate;
+    if (updateMilestone.completed !== undefined) updatedMilestone.completed = updateMilestone.completed ?? false;
     this.milestones.set(id, updatedMilestone);
     return updatedMilestone;
   }
