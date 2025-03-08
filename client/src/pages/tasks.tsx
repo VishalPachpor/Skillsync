@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 
 const categories = ["Coding", "Studying", "Content", "Languages"];
 
@@ -57,7 +58,20 @@ export default function Tasks() {
   });
 
   const createTask = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/tasks", data),
+    mutationFn: (data: any) => {
+      // Ensure dueDate is properly formatted as a string if it's a Date object
+      if (data.dueDate instanceof Date) {
+        data.dueDate = data.dueDate.toISOString();
+      }
+
+      // If dueDate is empty, set it to null to avoid validation errors
+      if (data.dueDate === "" || !data.dueDate) {
+        data.dueDate = null;
+      }
+
+      console.log("Submitting task with data:", data);
+      return apiRequest("POST", "/api/tasks", data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       setIsOpen(false);
@@ -65,6 +79,14 @@ export default function Tasks() {
       toast({
         title: "Task created",
         description: "Your new task has been created successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error("Error creating task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create task. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -80,7 +102,8 @@ export default function Tasks() {
   });
 
   const deleteTask = useMutation({
-    mutationFn: (taskId: number) => apiRequest("DELETE", `/api/tasks/${taskId}`),
+    mutationFn: (taskId: number) =>
+      apiRequest("DELETE", `/api/tasks/${taskId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
@@ -94,12 +117,22 @@ export default function Tasks() {
     return <div>Loading...</div>;
   }
 
+  const handleFormSubmit = (data: any) => {
+    try {
+      createTask.mutate(data);
+    } catch (error) {
+      console.error("Form submission error:", error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
-          <p className="text-muted-foreground">Manage your tasks and track progress</p>
+          <p className="text-muted-foreground">
+            Manage your tasks and track progress
+          </p>
         </div>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -114,7 +147,10 @@ export default function Tasks() {
               <DialogTitle>Create New Task</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit((data) => createTask.mutate(data))} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(handleFormSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="title"
@@ -175,11 +211,14 @@ export default function Tasks() {
                   control={form.control}
                   name="dueDate"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Due Date</FormLabel>
-                      <FormControl>
-                        <Input type="datetime-local" {...field} />
-                      </FormControl>
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Due Date & Time</FormLabel>
+                      <DateTimePicker
+                        date={field.value}
+                        setDate={(date) => {
+                          field.onChange(date ? date : null);
+                        }}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -206,11 +245,17 @@ export default function Tasks() {
                 onCheckedChange={() => toggleTaskStatus.mutate(task)}
               />
               <div>
-                <p className={`font-medium ${task.completed ? "line-through text-muted-foreground" : ""}`}>
+                <p
+                  className={`font-medium ${
+                    task.completed ? "line-through text-muted-foreground" : ""
+                  }`}
+                >
                   {task.title}
                 </p>
                 {task.description && (
-                  <p className="text-sm text-muted-foreground">{task.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {task.description}
+                  </p>
                 )}
                 {task.dueDate && (
                   <p className="text-sm text-muted-foreground">

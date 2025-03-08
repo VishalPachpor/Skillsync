@@ -1,19 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PlayCircle, StopCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Task, TimeEntry } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 export function TimeTracker() {
-  const [selectedTaskId, setSelectedTaskId] = useState<string>("");
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Set up timer to update elapsed time
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    if (isTracking && startTime) {
+      interval = setInterval(() => {
+        setElapsedTime(new Date().getTime() - startTime.getTime());
+      }, 1000);
+    } else {
+      setElapsedTime(0);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTracking, startTime]);
 
   const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
@@ -25,10 +49,17 @@ export function TimeTracker() {
 
   const startTracking = useMutation({
     mutationFn: async () => {
+      if (!selectedTaskId) {
+        throw new Error("No task selected");
+      }
+
+      const currentTime = new Date();
       const entry = {
-        taskId: parseInt(selectedTaskId),
-        startTime: new Date().toISOString(),
+        taskId: selectedTaskId,
+        startTime: currentTime.toISOString(),
       };
+
+      console.log("Starting time tracking with data:", entry);
       return apiRequest("POST", "/api/time-entries", entry);
     },
     onSuccess: () => {
@@ -52,21 +83,31 @@ export function TimeTracker() {
 
   const stopTracking = useMutation({
     mutationFn: async () => {
-      if (!timeEntries?.length) return;
+      if (!timeEntries?.length) {
+        throw new Error("No active time entry found");
+      }
+
       const endTime = new Date();
-      const duration = startTime ? Math.round((endTime.getTime() - startTime.getTime()) / 60000) : 0;
+      const duration = startTime
+        ? Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+        : 0;
 
       const entry = {
         endTime: endTime.toISOString(),
         duration,
       };
 
-      return apiRequest("PATCH", `/api/time-entries/${timeEntries[timeEntries.length - 1].id}`, entry);
+      console.log("Stopping time tracking with data:", entry);
+      return apiRequest(
+        "PATCH",
+        `/api/time-entries/${timeEntries[timeEntries.length - 1].id}`,
+        entry
+      );
     },
     onSuccess: () => {
       setIsTracking(false);
       setStartTime(null);
-      setSelectedTaskId("");
+      setSelectedTaskId(null);
       queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
       toast({
         title: "Time tracking stopped",
@@ -82,6 +123,21 @@ export function TimeTracker() {
       console.error("Error stopping time tracking:", error);
     },
   });
+
+  // Get the active time entry, if any
+  const activeTimeEntry = timeEntries?.find((entry) => !entry.endTime);
+
+  // Check if there's an active time entry when component loads
+  useEffect(() => {
+    if (activeTimeEntry && !isTracking) {
+      const task = tasks?.find((t) => t.id === activeTimeEntry.taskId);
+      if (task) {
+        setSelectedTaskId(task.id);
+        setIsTracking(true);
+        setStartTime(new Date(activeTimeEntry.startTime));
+      }
+    }
+  }, [activeTimeEntry, tasks, isTracking]);
 
   if (tasksLoading) {
     return (
@@ -99,7 +155,7 @@ export function TimeTracker() {
     );
   }
 
-  const incompleteTasks = tasks?.filter(t => !t.completed) || [];
+  const incompleteTasks = tasks?.filter((t) => !t.completed) || [];
 
   return (
     <Card>
@@ -109,8 +165,8 @@ export function TimeTracker() {
       <CardContent>
         <div className="space-y-4">
           <Select
-            value={selectedTaskId}
-            onValueChange={setSelectedTaskId}
+            value={selectedTaskId?.toString() || ""}
+            onValueChange={(value) => setSelectedTaskId(Number(value))}
             disabled={isTracking || startTracking.isPending}
           >
             <SelectTrigger>
@@ -128,8 +184,14 @@ export function TimeTracker() {
           <Button
             className="w-full"
             size="lg"
-            disabled={(!selectedTaskId && !isTracking) || startTracking.isPending || stopTracking.isPending}
-            onClick={() => isTracking ? stopTracking.mutate() : startTracking.mutate()}
+            disabled={
+              (!selectedTaskId && !isTracking) ||
+              startTracking.isPending ||
+              stopTracking.isPending
+            }
+            onClick={() =>
+              isTracking ? stopTracking.mutate() : startTracking.mutate()
+            }
           >
             {isTracking ? (
               <>
@@ -144,9 +206,9 @@ export function TimeTracker() {
             )}
           </Button>
 
-          {isTracking && startTime && (
+          {isTracking && (
             <p className="text-center text-sm text-muted-foreground">
-              Tracking time for: {formatDuration(new Date().getTime() - startTime.getTime())}
+              Tracking time for: {formatDuration(elapsedTime)}
             </p>
           )}
         </div>
@@ -160,5 +222,7 @@ function formatDuration(ms: number): string {
   const minutes = Math.floor((ms / 1000 / 60) % 60);
   const hours = Math.floor(ms / 1000 / 60 / 60);
 
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  return `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 
 export default function Milestones() {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,7 +47,15 @@ export default function Milestones() {
   });
 
   const createMilestone = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/milestones", data),
+    mutationFn: (data: any) => {
+      // Ensure targetDate is properly formatted as a string if it's a Date object
+      if (data.targetDate instanceof Date) {
+        data.targetDate = data.targetDate.toISOString();
+      }
+
+      console.log("Creating milestone with data:", data);
+      return apiRequest("POST", "/api/milestones", data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/milestones"] });
       setIsOpen(false);
@@ -54,6 +63,14 @@ export default function Milestones() {
       toast({
         title: "Milestone created",
         description: "Your new milestone has been created successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error("Error creating milestone:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create milestone. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -80,6 +97,14 @@ export default function Milestones() {
     },
   });
 
+  const handleFormSubmit = (data: any) => {
+    try {
+      createMilestone.mutate(data);
+    } catch (error) {
+      console.error("Form submission error:", error);
+    }
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -89,7 +114,9 @@ export default function Milestones() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Milestones</h1>
-          <p className="text-muted-foreground">Track your progress towards goals</p>
+          <p className="text-muted-foreground">
+            Track your progress towards goals
+          </p>
         </div>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -105,7 +132,7 @@ export default function Milestones() {
             </DialogHeader>
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit((data) => createMilestone.mutate(data))}
+                onSubmit={form.handleSubmit(handleFormSubmit)}
                 className="space-y-4"
               >
                 <FormField
@@ -140,11 +167,14 @@ export default function Milestones() {
                   control={form.control}
                   name="targetDate"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Target Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Target Date & Time</FormLabel>
+                      <DateTimePicker
+                        date={field.value ? new Date(field.value) : undefined}
+                        setDate={(date) => {
+                          field.onChange(date ? date : null);
+                        }}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -165,7 +195,10 @@ export default function Milestones() {
             (new Date(milestone.targetDate).getTime() - new Date().getTime()) /
               (1000 * 60 * 60 * 24)
           );
-          const progress = Math.max(0, Math.min(100, 100 - (daysLeft / 30) * 100));
+          const progress = Math.max(
+            0,
+            Math.min(100, 100 - (daysLeft / 30) * 100)
+          );
 
           return (
             <div
@@ -176,10 +209,17 @@ export default function Milestones() {
                 <div>
                   <h3 className="text-lg font-medium">{milestone.title}</h3>
                   {milestone.description && (
-                    <p className="text-muted-foreground">{milestone.description}</p>
+                    <p className="text-muted-foreground">
+                      {milestone.description}
+                    </p>
                   )}
                   <p className="text-sm text-muted-foreground">
-                    Target: {new Date(milestone.targetDate).toLocaleDateString()}
+                    Target:{" "}
+                    {new Date(milestone.targetDate).toLocaleDateString()}{" "}
+                    {new Date(milestone.targetDate).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                     {daysLeft > 0 && ` (${daysLeft} days left)`}
                   </p>
                 </div>
@@ -191,7 +231,9 @@ export default function Milestones() {
                   >
                     <CheckCircle
                       className={`h-4 w-4 ${
-                        milestone.completed ? "text-primary" : "text-muted-foreground"
+                        milestone.completed
+                          ? "text-primary"
+                          : "text-muted-foreground"
                       }`}
                     />
                   </Button>

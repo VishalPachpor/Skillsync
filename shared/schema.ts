@@ -1,4 +1,11 @@
-import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  timestamp,
+  boolean,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -43,26 +50,60 @@ export const insertUserSchema = createInsertSchema(users).pick({
   photoUrl: true,
 });
 
-export const insertTaskSchema = createInsertSchema(tasks).pick({
-  title: true,
-  description: true,
-  category: true,
-  dueDate: true,
-  completed: true,
+// Custom schema for task with improved date handling
+export const insertTaskSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  category: z.string().min(1, "Category is required"),
+  dueDate: z
+    .union([z.string().nullable(), z.date().nullable(), z.literal("")])
+    .nullable()
+    .optional()
+    .transform((val) => {
+      if (!val) return null;
+      if (val === "") return null;
+      if (val instanceof Date) return val;
+      try {
+        return new Date(val);
+      } catch {
+        return null;
+      }
+    }),
+  completed: z.boolean().default(false),
 });
 
-export const insertTimeEntrySchema = createInsertSchema(timeEntries).pick({
-  taskId: true,
-  startTime: true,
-  endTime: true,
-  duration: true,
+// Custom schema for time entries with proper validation
+export const insertTimeEntrySchema = z.object({
+  taskId: z.number().int().positive(),
+  startTime: z
+    .string()
+    .or(z.date())
+    .transform((val) => (val instanceof Date ? val.toISOString() : val)),
+  endTime: z
+    .string()
+    .or(z.date())
+    .transform((val) => (val instanceof Date ? val.toISOString() : val))
+    .optional(),
+  duration: z.number().int().nonnegative().optional(),
 });
 
-export const insertMilestoneSchema = createInsertSchema(milestones).pick({
-  title: true,
-  description: true,
-  targetDate: true,
-  completed: true,
+// Custom schema for milestones with improved date handling
+export const insertMilestoneSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  targetDate: z
+    .union([z.string().nullable(), z.date().nullable(), z.literal("")])
+    .transform((val) => {
+      if (!val) throw new Error("Target date is required");
+      if (val === "") throw new Error("Target date is required");
+      if (val instanceof Date) return val;
+      try {
+        return new Date(val);
+      } catch {
+        throw new Error("Invalid date format");
+      }
+    }),
+  completed: z.boolean().default(false),
 });
 
 export type User = typeof users.$inferSelect;

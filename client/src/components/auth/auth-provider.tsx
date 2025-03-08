@@ -1,5 +1,7 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "firebase/auth";
+import { auth, createUserDocument } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 interface AuthContextType {
   user: User | null;
@@ -8,32 +10,61 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: {
-    displayName: "Test User",
-    email: "test@example.com",
-    uid: "test-uid",
-  } as User,
-  loading: false,
+  user: null,
+  loading: true,
   error: null,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Temporarily provide a dummy user
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    console.log("Setting up auth state listener");
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (user) => {
+        console.log("Auth state changed:", user?.uid || "null");
+
+        if (user) {
+          try {
+            console.log("User is authenticated, creating/updating document");
+            await createUserDocument(user);
+          } catch (error) {
+            console.error("Error creating/updating user document:", error);
+          }
+        }
+
+        setUser(user);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Auth state error:", error);
+        setError(error);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      console.log("Cleaning up auth state listener");
+      unsubscribe();
+    };
+  }, []);
+
+  console.log("AuthProvider state:", {
+    user: user?.uid || null,
+    loading,
+    error: error?.message || null,
+  });
+
   const value = {
-    user: {
-      displayName: "Test User",
-      email: "test@example.com",
-      uid: "test-uid",
-    } as User,
-    loading: false,
-    error: null,
+    user,
+    loading,
+    error,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

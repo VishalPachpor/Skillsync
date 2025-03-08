@@ -1,3 +1,7 @@
+import * as dotenv from "dotenv";
+// Load environment variables from .env file
+dotenv.config();
+
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
@@ -9,6 +13,13 @@ declare module "express-session" {
   }
 }
 
+// For debugging
+console.log("Environment variables:", {
+  NODE_ENV: process.env.NODE_ENV,
+  DATABASE_URL: process.env.DATABASE_URL ? "Set (masked for security)" : "Not set",
+  SESSION_SECRET: process.env.SESSION_SECRET ? "Set (masked for security)" : "Not set",
+});
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -16,7 +27,7 @@ app.use(express.urlencoded({ extended: false }));
 // Add session middleware
 app.use(
   session({
-    secret: "your-secret-key", // In production, use a proper secret
+    secret: process.env.SESSION_SECRET || "your-secret-key",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -27,6 +38,7 @@ app.use(
 );
 
 // Development middleware for testing - automatically set userId
+// This is required for development until we implement proper Firebase auth on the server
 if (process.env.NODE_ENV !== "production") {
   app.use((req, _res, next) => {
     if (!req.session.userId) {
@@ -38,8 +50,8 @@ if (process.env.NODE_ENV !== "production") {
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: 'Internal Server Error' });
+  console.error("Error:", err);
+  res.status(500).json({ error: "Internal Server Error" });
 });
 
 app.use((req, res, next) => {
@@ -82,16 +94,12 @@ app.use((req, res, next) => {
       serveStatic(app);
     }
 
-    const port = 5000;
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
+    const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+    server.listen(port, "localhost", () => {
       log(`Server started successfully on port ${port}`);
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 })();
