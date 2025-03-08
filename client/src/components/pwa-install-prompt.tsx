@@ -25,10 +25,10 @@ export function PwaInstallPrompt() {
     }
 
     // For iOS devices - check if added to home screen
+    const userAgent = window.navigator.userAgent || "";
     if (
       navigator.standalone ||
-      (window.navigator.userAgent.match(/iPhone|iPad|iPod/) &&
-        !window.navigator.userAgent.match(/Safari/))
+      (userAgent.match(/iPhone|iPad|iPod/) && !userAgent.match(/Safari/))
     ) {
       setIsAppInstalled(true);
       return;

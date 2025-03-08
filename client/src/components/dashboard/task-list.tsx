@@ -26,14 +26,16 @@ export function TaskList() {
     );
   }
 
-  const sortedTasks = tasks?.sort((a, b) => {
-    if (a.completed === b.completed) {
-      return a.dueDate && b.dueDate 
-        ? new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
-        : 0;
-    }
-    return a.completed ? 1 : -1;
-  }).slice(0, 5);
+  const sortedTasks = tasks
+    ?.sort((a, b) => {
+      if (a.completed === b.completed) {
+        return a.dueDate && b.dueDate
+          ? new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+          : 0;
+      }
+      return a.completed ? 1 : -1;
+    })
+    .slice(0, 5);
 
   return (
     <Card>
@@ -50,7 +52,11 @@ export function TaskList() {
               <div className="flex items-center gap-3">
                 <Checkbox checked={task.completed || false} />
                 <div>
-                  <p className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                  <p
+                    className={`font-medium ${
+                      task.completed ? "line-through text-muted-foreground" : ""
+                    }`}
+                  >
                     {task.title}
                   </p>
                   {task.dueDate && (
@@ -71,7 +77,11 @@ export function TaskList() {
   );
 }
 
-function getCategoryVariant(category: string): "default" | "secondary" | "destructive" {
+function getCategoryVariant(
+  category?: string
+): "default" | "secondary" | "destructive" {
+  if (!category) return "default";
+
   switch (category.toLowerCase()) {
     case "coding":
       return "default";
