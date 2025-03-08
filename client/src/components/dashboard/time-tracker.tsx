@@ -15,7 +15,7 @@ export function TimeTracker() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: tasks } = useQuery<Task[]>({
+  const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
   });
 
@@ -40,30 +40,66 @@ export function TimeTracker() {
         description: "The timer has been started for the selected task.",
       });
     },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to start time tracking. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error starting time tracking:", error);
+    },
   });
 
   const stopTracking = useMutation({
     mutationFn: async () => {
+      if (!timeEntries?.length) return;
       const endTime = new Date();
       const duration = startTime ? Math.round((endTime.getTime() - startTime.getTime()) / 60000) : 0;
-      
+
       const entry = {
         endTime: endTime.toISOString(),
         duration,
       };
-      
-      return apiRequest("PATCH", `/api/time-entries/${timeEntries?.[timeEntries.length - 1].id}`, entry);
+
+      return apiRequest("PATCH", `/api/time-entries/${timeEntries[timeEntries.length - 1].id}`, entry);
     },
     onSuccess: () => {
       setIsTracking(false);
       setStartTime(null);
+      setSelectedTaskId("");
       queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
       toast({
         title: "Time tracking stopped",
         description: "The timer has been stopped and the entry has been saved.",
       });
     },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to stop time tracking. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error stopping time tracking:", error);
+    },
   });
+
+  if (tasksLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Time Tracker</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="h-10 bg-muted animate-pulse rounded-md" />
+            <div className="h-10 bg-muted animate-pulse rounded-md" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const incompleteTasks = tasks?.filter(t => !t.completed) || [];
 
   return (
     <Card>
@@ -75,13 +111,13 @@ export function TimeTracker() {
           <Select
             value={selectedTaskId}
             onValueChange={setSelectedTaskId}
-            disabled={isTracking}
+            disabled={isTracking || startTracking.isPending}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a task" />
             </SelectTrigger>
             <SelectContent>
-              {tasks?.filter(t => !t.completed).map((task) => (
+              {incompleteTasks.map((task) => (
                 <SelectItem key={task.id} value={task.id.toString()}>
                   {task.title}
                 </SelectItem>
@@ -92,18 +128,18 @@ export function TimeTracker() {
           <Button
             className="w-full"
             size="lg"
-            disabled={!selectedTaskId && !isTracking}
+            disabled={(!selectedTaskId && !isTracking) || startTracking.isPending || stopTracking.isPending}
             onClick={() => isTracking ? stopTracking.mutate() : startTracking.mutate()}
           >
             {isTracking ? (
               <>
                 <StopCircle className="mr-2 h-5 w-5" />
-                Stop Tracking
+                {stopTracking.isPending ? "Stopping..." : "Stop Tracking"}
               </>
             ) : (
               <>
                 <PlayCircle className="mr-2 h-5 w-5" />
-                Start Tracking
+                {startTracking.isPending ? "Starting..." : "Start Tracking"}
               </>
             )}
           </Button>
