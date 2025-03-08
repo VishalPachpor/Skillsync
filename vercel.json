@@ -50,7 +50,8 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/api/tasks", "destination": "/api/tasks" },
+    { "source": "/api/milestones", "destination": "/api/milestones" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
