@@ -9,6 +9,7 @@ import {
   FullPageLoading,
   LoadingSpinner,
 } from "@/components/ui/loading-spinner";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
@@ -127,6 +128,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <Router />
+          <PwaInstallPrompt />
         </AuthProvider>
       </QueryClientProvider>
     </>
