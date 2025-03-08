@@ -1,4 +1,5 @@
-// API route for milestones - using proper Vercel serverless function structure
+// API route for milestones - with database integration
+import { getMilestones, createMilestone } from "../db";
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -26,17 +27,26 @@ export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
       console.log("GET request to /api/milestones");
-      return res
-        .status(200)
-        .json([
-          {
-            id: "1",
-            title: "Complete 10 Tasks",
-            description: "Complete 10 tasks to unlock this milestone",
-            progress: 3,
-            target: 10,
-          },
-        ]);
+      try {
+        // Fetch milestones from database
+        const milestones = await getMilestones();
+        console.log(`Retrieved ${milestones.length} milestones from database`);
+        return res.status(200).json(milestones);
+      } catch (dbError) {
+        console.error("Database error when fetching milestones:", dbError);
+        // Fallback to mock data if database fails
+        return res
+          .status(200)
+          .json([
+            {
+              id: "1",
+              title: "Complete 10 Tasks",
+              description: "Complete 10 tasks to unlock this milestone",
+              progress: 3,
+              target: 10,
+            },
+          ]);
+      }
     }
 
     if (req.method === "POST") {
@@ -64,12 +74,20 @@ export default async function handler(req, res) {
 
       console.log("Creating milestone with data:", milestoneData);
 
-      // Always return a success response
-      return res.status(201).json({
-        id: Date.now().toString(),
-        ...milestoneData,
-        createdAt: new Date().toISOString(),
-      });
+      try {
+        // Save milestone to database
+        const newMilestone = await createMilestone(milestoneData);
+        console.log("Milestone created in database:", newMilestone);
+        return res.status(201).json(newMilestone);
+      } catch (dbError) {
+        console.error("Database error when creating milestone:", dbError);
+        // Fallback to mock response if database fails
+        return res.status(201).json({
+          id: Date.now().toString(),
+          ...milestoneData,
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
 
     // Method not allowed

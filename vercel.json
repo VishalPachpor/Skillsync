@@ -50,6 +50,7 @@
     }
   ],
   "routes": [
+    { "src": "/api/init-db", "methods": ["POST"], "dest": "/api/init-db" },
     {
       "src": "/api/tasks",
       "methods": ["GET", "POST", "OPTIONS"],

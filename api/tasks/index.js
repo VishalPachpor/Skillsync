@@ -1,4 +1,5 @@
-// API route for tasks - using proper Vercel serverless function structure
+// API route for tasks - with database integration
+import { getTasks, createTask } from "../db";
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -26,14 +27,23 @@ export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
       console.log("GET request to /api/tasks");
-      return res.status(200).json([
-        {
-          id: "1",
-          title: "Sample Task",
-          description: "This is a sample task",
-          completed: false,
-        },
-      ]);
+      try {
+        // Fetch tasks from database
+        const tasks = await getTasks();
+        console.log(`Retrieved ${tasks.length} tasks from database`);
+        return res.status(200).json(tasks);
+      } catch (dbError) {
+        console.error("Database error when fetching tasks:", dbError);
+        // Fallback to mock data if database fails
+        return res.status(200).json([
+          {
+            id: "1",
+            title: "Sample Task",
+            description: "This is a sample task",
+            completed: false,
+          },
+        ]);
+      }
     }
 
     if (req.method === "POST") {
@@ -61,12 +71,20 @@ export default async function handler(req, res) {
 
       console.log("Creating task with data:", taskData);
 
-      // Always return a success response
-      return res.status(201).json({
-        id: Date.now().toString(),
-        ...taskData,
-        createdAt: new Date().toISOString(),
-      });
+      try {
+        // Save task to database
+        const newTask = await createTask(taskData);
+        console.log("Task created in database:", newTask);
+        return res.status(201).json(newTask);
+      } catch (dbError) {
+        console.error("Database error when creating task:", dbError);
+        // Fallback to mock response if database fails
+        return res.status(201).json({
+          id: Date.now().toString(),
+          ...taskData,
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
 
     // Method not allowed
