@@ -4,8 +4,6 @@ import {
   LayoutDashboard,
   CheckSquare,
   Target,
-  Clock,
-  Settings,
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,8 +13,6 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: CheckSquare, label: "Tasks", href: "/tasks" },
   { icon: Target, label: "Milestones", href: "/milestones" },
-  { icon: Clock, label: "Time Tracking", href: "/time-tracking" },
-  { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
 export function NavSidebar() {
@@ -27,7 +23,7 @@ export function NavSidebar() {
       <div className="p-6">
         <h1 className="text-2xl font-bold text-sidebar-foreground">Productivity</h1>
       </div>
-      
+
       <nav className="px-3">
         {navItems.map((item) => (
           <Link key={item.href} href={item.href}>
