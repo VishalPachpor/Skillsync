@@ -1,0 +1,84 @@
+Got it! You want a detailed development prompt for building the actual app, not just the Figma design.
+
+Here’s a comprehensive prompt for developing the mobile app using React Native and Firebase:
+
+⸻
+
+Project Title: 90-Day Productivity Tracker App
+
+Objective:
+
+Develop a minimalist mobile app that helps users track their daily tasks, milestones, and time spent on various activities, including app development, content creation, and language learning. The app should feature calendar integration, a clean UI, and support for both light and dark modes.
+
+⸻
+
+Tech Stack:
+
+Frontend:
+	•	Framework: React Native (Expo for quick setup)
+	•	State Management: Zustand (lightweight) or Redux
+	•	Navigation: React Navigation
+	•	UI Components: React Native Paper or NativeBase
+
+Backend & Database:
+	•	Backend: Firebase (for authentication and database)
+	•	Database: Firestore (for real-time updates)
+	•	Authentication: Firebase Auth (Google sign-in)
+
+⸻
+
+Core Features & Development Plan
+
+1. Authentication (Week 1)
+	•	Implement Firebase Authentication (Google Sign-In).
+	•	Store user profile data (name, email, preferences).
+
+2. Dashboard Screen (Week 2)
+	•	Daily task list with categories (Coding, Studying, Content Creation, Languages).
+	•	Progress summary with task completion percentages.
+	•	Calendar widget to view scheduled tasks.
+	•	Quick Add Task button (Floating Action Button - FAB).
+
+3. Task Management (Week 3)
+	•	Create, Edit, Delete tasks with optional due dates.
+	•	Mark tasks as completed or pending.
+	•	Sort & filter tasks by category, priority, or deadline.
+
+4. Milestone Tracker (Week 4)
+	•	Weekly & monthly goal tracking.
+	•	Timeline View for completed & upcoming milestones.
+	•	Percentage completion indicators for each goal.
+
+5. Time Logging (Week 5)
+	•	Manually log time spent on different activities.
+	•	Show daily, weekly, and monthly analytics (pie chart, bar graph).
+	•	Reminders for unlogged time (optional notification).
+
+6. Notes & Research (Week 6)
+	•	Text editor for saving ideas and research notes.
+	•	Categorization tags (Crypto, AI, Tech, etc.).
+
+7. Settings & UI Customization (Week 7)
+	•	Toggle Light/Dark Mode.
+	•	Set daily task goals and push notifications.
+
+8. Final Testing & Deployment (Week 8)
+	•	Optimize performance and animations.
+	•	Test on Android & iOS for responsiveness.
+	•	Deploy on Google Play Store (App Store if needed).
+
+⸻
+
+Additional Enhancements (Post MVP)
+	•	Offline Mode: Save tasks locally & sync later.
+	•	AI-based suggestions: Smart task recommendations based on progress.
+	•	Social Sharing: Share milestones with friends.
+
+⸻
+
+Next Steps:
+	1.	Set up the project structure in React Native (Expo).
+	2.	Implement Firebase authentication.
+	3.	Start building core screens (Dashboard, Tasks, Milestones).
+
+Would you like me to break down any part further, or should we start coding?
