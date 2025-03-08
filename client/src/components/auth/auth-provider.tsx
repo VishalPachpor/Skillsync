@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, User, getRedirectResult } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
@@ -22,32 +22,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    try {
-      const unsubscribe = onAuthStateChanged(
-        auth,
-        (user) => {
-          setUser(user);
-          setLoading(false);
-          setError(null);
-        },
-        (error) => {
-          console.error("Auth state change error:", error);
-          setError(error);
-          setLoading(false);
+    // Handle redirect result
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          setUser(result.user);
           toast({
-            title: "Authentication Error",
-            description: "There was a problem with authentication. Please try again.",
-            variant: "destructive",
+            title: "Success",
+            description: "Successfully signed in with Google",
           });
         }
-      );
+      })
+      .catch((error) => {
+        console.error("Redirect sign-in error:", error);
+        toast({
+          title: "Authentication Error",
+          description: "Failed to sign in with Google. Please try again.",
+          variant: "destructive",
+        });
+      });
 
-      return () => unsubscribe();
-    } catch (err) {
-      console.error("Auth provider setup error:", err);
-      setError(err as Error);
-      setLoading(false);
-    }
+    // Listen for auth state changes
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        setUser(user);
+        setLoading(false);
+        setError(null);
+      },
+      (error) => {
+        console.error("Auth state change error:", error);
+        setError(error);
+        setLoading(false);
+        toast({
+          title: "Authentication Error",
+          description: "There was a problem with authentication. Please try again.",
+          variant: "destructive",
+        });
+      }
+    );
+
+    return () => unsubscribe();
   }, [toast]);
 
   return (
